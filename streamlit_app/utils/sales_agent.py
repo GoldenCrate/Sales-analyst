@@ -25,8 +25,13 @@ def build_context(pipeline_df, deals_df, recommendations) -> str:
     """
     lines = []
     total_pipeline = pipeline_df["pipeline_value_usd"].sum()
-    overall_win = pipeline_df["win_rate"].mean()
-    avg_dtc = pipeline_df["avg_days_to_close"].mean()
+    # Volume-weighted so the figures the agent cites are the true portfolio rates,
+    # not an unweighted mean-of-rows.
+    overall_win = pipeline_df["deals_won"].sum() / pipeline_df["deals_created"].sum()
+    avg_dtc = (
+        (pipeline_df["avg_days_to_close"] * pipeline_df["deals_won"]).sum()
+        / pipeline_df["deals_won"].sum()
+    )
     lines.append(f"Total pipeline value: ${total_pipeline / 1e6:.1f}M")
     lines.append(f"Overall win rate: {overall_win * 100:.1f}%")
     lines.append(f"Average days to close: {avg_dtc:.0f}")
@@ -37,12 +42,14 @@ def build_context(pipeline_df, deals_df, recommendations) -> str:
         lines.append(f"- {product}: ${val / 1e6:.1f}M")
 
     lines.append("\nWin rate by product:")
-    by_prod_wr = pipeline_df.groupby("product")["win_rate"].mean().sort_values(ascending=False)
+    grp_prod = pipeline_df.groupby("product")
+    by_prod_wr = (grp_prod["deals_won"].sum() / grp_prod["deals_created"].sum()).sort_values(ascending=False)
     for product, wr in by_prod_wr.items():
         lines.append(f"- {product}: {wr * 100:.1f}%")
 
     lines.append("\nWin rate by acquirer segment:")
-    by_seg_wr = pipeline_df.groupby("acquirer_segment")["win_rate"].mean().sort_values(ascending=False)
+    grp_seg = pipeline_df.groupby("acquirer_segment")
+    by_seg_wr = (grp_seg["deals_won"].sum() / grp_seg["deals_created"].sum()).sort_values(ascending=False)
     for seg, wr in by_seg_wr.items():
         lines.append(f"- {seg}: {wr * 100:.1f}%")
 
