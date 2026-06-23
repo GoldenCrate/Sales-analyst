@@ -2,7 +2,13 @@
 
 ### [Live Dashboard →](https://sales-analyst-hpecckbmvzzbhe6a5owuax.streamlit.app/)
 
-<!-- Screenshots added after deploy: market/pipeline pages + the AI Workflow Agent -->
+![Executive Pipeline Summary — KPIs with MoM deltas, pipeline-by-product trend, and a deal-health scorecard](docs/page1-pipeline-summary.png)
+
+![AI Workflow Agent — Claude-generated executive QBR summary, grounded in the pipeline data](docs/page5-ai-workflow-agent.png)
+
+![Post-Sale Time-to-Revenue — stage funnel and cycle-time bottleneck flagging](docs/page3-time-to-revenue.png)
+
+![Pipeline Velocity — win-rate trends by segment and slowest-segment cycle time](docs/page2-pipeline-velocity.png)
 
 **A five-page NA VAS sales-enablement dashboard — pipeline analytics, velocity, post-sale time-to-revenue, automated deal monitoring, and a Claude-powered AI agent that answers pipeline questions and auto-writes executive summaries.**
 

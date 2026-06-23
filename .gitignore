@@ -224,3 +224,9 @@ docs/resume*.md
 !docs/superpowers/**
 !docs/pipeline-diagram.md
 !docs/Leo_Chan_Sales_Enablement_Resume.md
+
+# Keep README screenshots
+!docs/page1-pipeline-summary.png
+!docs/page2-pipeline-velocity.png
+!docs/page3-time-to-revenue.png
+!docs/page5-ai-workflow-agent.png
