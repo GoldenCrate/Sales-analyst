@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from utils.data_loader import load_deals
+from utils.chart_style import ACCENT, BLUE, GREY, insight, style
 
 st.set_page_config(page_title="Time to Revenue", page_icon="⏱️", layout="wide")
 
@@ -53,16 +54,19 @@ funnel_df["stage"] = pd.Categorical(funnel_df["stage"], categories=_STAGE_ORDER,
 
 funnel_chart = (
     alt.Chart(funnel_df)
-    .mark_bar()
+    .mark_bar(color=BLUE)
     .encode(
         x=alt.X("deal_count:Q", title="Number of Deals"),
         y=alt.Y("stage:N", sort=_STAGE_ORDER, title="Stage"),
-        color=alt.Color("deal_count:Q", scale=alt.Scale(scheme="blues"), legend=None),
         tooltip=["stage:N", "deal_count:Q"],
     )
     .properties(height=220)
 )
-st.altair_chart(funnel_chart, use_container_width=True)
+st.altair_chart(style(funnel_chart), use_container_width=True)
+insight(
+    "Read the drop-off down the funnel — the stage where deal count falls off most "
+    "is where post-sale deals are getting stuck before reaching Live revenue."
+)
 
 st.divider()
 st.subheader("Avg Cycle Time per Stage")
@@ -88,7 +92,7 @@ cycle_chart = (
         y=alt.Y("avg_days:Q", title="Avg Days in Stage"),
         color=alt.Color(
             "status:N",
-            scale=alt.Scale(domain=["Bottleneck", "On Track"], range=["#dc3545", "#28a745"]),
+            scale=alt.Scale(domain=["Bottleneck", "On Track"], range=[ACCENT, GREY]),
             title="Status",
         ),
         tooltip=[
@@ -99,25 +103,31 @@ cycle_chart = (
     )
     .properties(height=280)
 )
-st.altair_chart(cycle_chart, use_container_width=True)
+st.altair_chart(style(cycle_chart), use_container_width=True)
+insight(
+    "Red bars exceed the stage's cycle-time threshold — these are the bottlenecks "
+    "delaying time-to-revenue; grey stages are on track."
+)
 
 st.divider()
 st.subheader("Days to First Revenue by Product")
-st.caption("Distribution of days from Closed Won to first Live revenue")
 
 live_df = post_sale[post_sale["days_to_first_revenue"].notna()].copy()
 
 if len(live_df) > 0:
     ttr_chart = (
         alt.Chart(live_df)
-        .mark_boxplot(extent="min-max")
+        .mark_boxplot(extent="min-max", color=GREY)
         .encode(
             x=alt.X("product:N", title="Product"),
             y=alt.Y("days_to_first_revenue:Q", title="Days to First Revenue"),
-            color=alt.Color("product:N", legend=None),
         )
         .properties(height=280)
     )
-    st.altair_chart(ttr_chart, use_container_width=True)
+    st.altair_chart(style(ttr_chart), use_container_width=True)
+    insight(
+        "Distribution of days from Closed Won to first Live revenue. Wider boxes / "
+        "higher medians = less predictable, slower revenue realization for that product."
+    )
 else:
     st.info("No Live deals with revenue data yet.")

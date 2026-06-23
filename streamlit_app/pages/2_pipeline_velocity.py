@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from utils.data_loader import load_pipeline_monthly
+from utils.chart_style import ACCENT, CATEGORY_RANGE, GREY, insight, style
 
 st.set_page_config(page_title="Pipeline Velocity", page_icon="📈", layout="wide")
 
@@ -45,12 +46,12 @@ st.subheader("Win Rate Over Time by Segment")
 
 win_chart = (
     alt.Chart(trend_df)
-    .mark_bar()
+    .mark_line(point=True)
     .encode(
         x=alt.X("month:T", title="Month", axis=alt.Axis(format="%b %Y")),
         y=alt.Y("win_rate:Q", title="Win Rate", axis=alt.Axis(format=".0%")),
-        color=alt.Color("acquirer_segment:N", title="Segment"),
-        xOffset="acquirer_segment:N",
+        color=alt.Color("acquirer_segment:N", title="Segment",
+                        scale=alt.Scale(range=CATEGORY_RANGE)),
         tooltip=[
             alt.Tooltip("month:T", title="Month", format="%B %Y"),
             "acquirer_segment:N",
@@ -59,7 +60,11 @@ win_chart = (
     )
     .properties(height=280)
 )
-st.altair_chart(win_chart, use_container_width=True)
+st.altair_chart(style(win_chart), use_container_width=True)
+insight(
+    "Watch each segment's line over time — a rising trend confirms GTM traction; "
+    "a segment trending down is where win rates are slipping and need diagnosis."
+)
 
 st.divider()
 st.subheader("Avg Days to Close by Segment (Last 3 Months)")
@@ -72,6 +77,7 @@ days_df = (
     .reset_index()
     .sort_values("avg_days")
 )
+slowest_segment = str(days_df.iloc[-1]["acquirer_segment"]) if len(days_df) else None
 
 days_chart = (
     alt.Chart(days_df)
@@ -79,7 +85,10 @@ days_chart = (
     .encode(
         x=alt.X("avg_days:Q", title="Avg Days to Close"),
         y=alt.Y("acquirer_segment:N", title="Segment", sort="-x"),
-        color=alt.Color("acquirer_segment:N", legend=None),
+        color=alt.condition(
+            alt.FieldEqualPredicate(field="acquirer_segment", equal=slowest_segment),
+            alt.value(ACCENT), alt.value(GREY),
+        ),
         tooltip=[
             "acquirer_segment:N",
             alt.Tooltip("avg_days:Q", title="Avg Days", format=".1f"),
@@ -87,14 +96,14 @@ days_chart = (
     )
     .properties(height=200)
 )
-st.altair_chart(days_chart, use_container_width=True)
+st.altair_chart(style(days_chart), use_container_width=True)
+insight(
+    f"<b>{slowest_segment}</b> is the slowest to close — the longest sales cycle and "
+    "the segment where shortening time-to-close would free up the most capacity."
+)
 
 st.divider()
 st.subheader("Deal Size vs Win Rate by Segment")
-st.caption(
-    "Bubble size = pipeline value. ISOs close faster at lower deal size; "
-    "Tier 1 Banks carry higher value but longer cycles."
-)
 
 scatter_df = (
     filtered.groupby("acquirer_segment")
@@ -114,7 +123,8 @@ scatter_chart = (
         x=alt.X("deal_size_k:Q", title="Avg Deal Size ($K)", axis=alt.Axis(format="$,.0f")),
         y=alt.Y("win_rate:Q", title="Win Rate", axis=alt.Axis(format=".0%")),
         size=alt.Size("pipeline_value_usd:Q", title="Pipeline Value", legend=None),
-        color=alt.Color("acquirer_segment:N", title="Segment"),
+        color=alt.Color("acquirer_segment:N", title="Segment",
+                        scale=alt.Scale(range=CATEGORY_RANGE)),
         tooltip=[
             "acquirer_segment:N",
             alt.Tooltip("deal_size_k:Q", title="Avg Deal Size ($K)", format="$,.0f"),
@@ -124,4 +134,9 @@ scatter_chart = (
     )
     .properties(height=300)
 )
-st.altair_chart(scatter_chart, use_container_width=True)
+st.altair_chart(style(scatter_chart), use_container_width=True)
+insight(
+    "Bubble size = pipeline value. Top-right is the sweet spot (high value, high win "
+    "rate); segments low and to the right are big deals that are hard to win — where "
+    "enablement and deal support pay off most."
+)

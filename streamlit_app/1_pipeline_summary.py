@@ -4,6 +4,7 @@ import streamlit as st
 
 from utils.data_loader import load_pipeline_monthly
 from utils.deal_health import compute_deal_health
+from utils.chart_style import CATEGORY_RANGE, fmt_big, insight, style
 
 st.set_page_config(page_title="Visa VAS Pipeline", page_icon="💳", layout="wide")
 
@@ -38,15 +39,27 @@ st.caption(
     f"As of {pd.Timestamp(latest_month).strftime('%B %Y')} · NA VAS Sales Enablement"
 )
 
+prev_win_rate = prev["win_rate"].mean()
+prev_days = prev["avg_days_to_close"].mean()
+
 col1, col2, col3, col4 = st.columns(4)
 col1.metric(
     "Total Pipeline Value",
-    f"${total_pipeline / 1e6:.1f}M",
-    delta=f"{(total_pipeline - prev_pipeline) / prev_pipeline:.1%} MoM",
+    fmt_big(total_pipeline, money=True),
+    delta=f"{(total_pipeline - prev_pipeline) / prev_pipeline:+.1%} MoM",
 )
-col2.metric("Blended Win Rate", f"{blended_win_rate:.0%}")
-col3.metric("Avg Days to Close", f"{avg_days:.0f} days")
-col4.metric("Pipeline MoM Growth", f"{portfolio_growth:.1%}")
+col2.metric(
+    "Blended Win Rate",
+    f"{blended_win_rate:.0%}",
+    delta=f"{(blended_win_rate - prev_win_rate) * 100:+.1f}pp MoM",
+)
+col3.metric(
+    "Avg Days to Close",
+    f"{avg_days:.0f} days",
+    delta=f"{avg_days - prev_days:+.0f} days MoM",
+    delta_color="inverse",
+)
+col4.metric("Pipeline MoM Growth", f"{portfolio_growth:+.1%}")
 
 st.divider()
 st.subheader("Pipeline Value by Product (Last 12 Months)")
@@ -60,8 +73,9 @@ chart = (
     .mark_line(point=True)
     .encode(
         x=alt.X("month:T", title="Month", axis=alt.Axis(format="%b %Y")),
-        y=alt.Y("pipeline_m:Q", title="Pipeline Value ($M)", axis=alt.Axis(format="$,.1f")),
-        color=alt.Color("product:N", title="Product"),
+        y=alt.Y("pipeline_m:Q", title="Pipeline Value ($M)", axis=alt.Axis(format="$,.0f")),
+        color=alt.Color("product:N", title="Product",
+                        scale=alt.Scale(range=CATEGORY_RANGE)),
         tooltip=[
             alt.Tooltip("month:T", title="Month", format="%B %Y"),
             "product:N",
@@ -70,7 +84,11 @@ chart = (
     )
     .properties(height=320)
 )
-st.altair_chart(chart, use_container_width=True)
+st.altair_chart(style(chart), use_container_width=True)
+insight(
+    "Compare the trajectories — a product climbing steadily is where momentum (and "
+    "quota) is building; a flattening or falling line flags pipeline that needs attention."
+)
 
 st.divider()
 st.subheader("Deal Health Scorecard")
